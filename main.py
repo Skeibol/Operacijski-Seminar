@@ -55,7 +55,7 @@ def specialSignalHandler(signum, frame):
 
     Args:
         signum (int): Broj zaprimljenog signala.
-        signum (frame obj): Okvir stoga u trenutku zaprimanja signala.
+        frame (frame obj): Okvir stoga u trenutku zaprimanja signala.
     """
     print(f"Zaprimljen signal broj {signum}")
     print(f"PID: {os.getpid()}, PPID: {os.getppid()}")
