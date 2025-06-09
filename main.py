@@ -211,8 +211,7 @@ def processEvenDivisors(thread_name):
     print(f"[{thread_name}] Kraj izvođenja.")
     print(f"[{thread_name}] Vrijeme trajanja izvođenja: {executionTime:.2f} sekundi.")
 
-def zadatakCetvrti():
-    global all_divisors
+def threadingDivision():
     all_divisors = [] # Resetiraj listu za svaki poziv funkcije
     first_two_threads_done.clear() # Resetiraj Event
 
@@ -269,7 +268,7 @@ def menu():
             zadatakTreci()
             getMenuText()
         elif (menuChoice == '4'):
-            zadatakCetvrti()
+            threadingDivision()
             getMenuText()
         elif (menuChoice == 'out' or menuChoice == 'exit'):
             break
