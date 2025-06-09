@@ -4,6 +4,8 @@ import platform
 import signal
 import os
 import traceback
+import threading
+import time
 
 # Globalne varijable
 HOME_DIR = os.path.expanduser("~")
@@ -158,24 +160,96 @@ def zadatakTreci():
     '''
 
     pass
+    
+all_divisors = []
+divisors_lock = threading.Lock()
+first_two_threads_done = threading.Event()
 
+def findDivisors(start, end, thread_name):
+    """
+    Funkcija za pronalaženje djelitelja brojeva unutar zadanog raspona.
+    """
+    global all_divisors
+    print(f"[{thread_name}] Početak izvođenja.")
+    localDivisors = []
+    for num in range(start, end + 1):
+        for i in range(1, num + 1):
+            if num % i == 0:
+                localDivisors.append(i)
+    
+    with divisors_lock:
+        all_divisors.extend(localDivisors)
+    print(f"[{thread_name}] Kraj izvođenja.")
+
+
+def processEvenDivisors(thread_name):
+    """
+    Funkcija koja pronalazi sve parne djelitelje iz globalne liste, uklanja duplikate,
+    sortira ih i ispisuje.
+    """
+    print(f"[{thread_name}] Početak izvođenja.")
+    startTime = time.time()
+    
+    # Čeka dok prve dvije dretve ne završe s radom
+    first_two_threads_done.wait()
+
+    uniqueEvenDivisors = set() # Koristimo set za automatsko uklanjanje duplikata
+
+    with divisors_lock: # Zaključava listu prije čitanja
+        # Pronađi sve parne djelitelje i dodaj ih u set (set automatski rješava duplikate)
+        for divisor in all_divisors:
+            if divisor % 2 == 0:
+                uniqueEvenDivisors.add(divisor)
+        
+    # Pretvori set natrag u listu i sortiraj je
+    sorted_uniqueEvenDivisors = sorted(list(uniqueEvenDivisors))
+
+    print("\nSvi parni djelitelji (sortirani i bez ponavljanja):")
+    print(sorted_uniqueEvenDivisors)
+    
+    endTime = time.time()
+    executionTime = endTime - startTime
+    print(f"[{thread_name}] Kraj izvođenja.")
+    print(f"[{thread_name}] Vrijeme trajanja izvođenja: {executionTime:.2f} sekundi.")
 
 def zadatakCetvrti():
-    '''
-    Korisniku se omogućava unos pozitivne cjelobrojne vrijednosti k, ne manje
-    od 1 000 ni veće od 200 000 (potrebno napraviti provjeru unosa i ponuditi ponovni unos ako
-    vrijednost ne odgovara intervalu). Program se izvršava u tri dretve od kojih prve dvije najprije
-    rade listu dividers koja sadrži sve djelitelje svakog broja iz intervala od [1,k] (interval
-    proračuna ravnomjerno rasporediti na dvije dretve), a po njihovu završetku treća dretva zatim
-    stvara novu listu koja sadrži samo parne brojeve iz prethodne liste i ispisuje ju na zaslonu.
-    Svaka dretva na početku i na kraju izvođenja mora na zaslonu ispisati vlastiti naziv koji joj
-    dodjeljuje sustav (npr. Thread-1), uz odgovarajuću obavijest o početku ili završetku
-    izvođenja, dok dodatno treća dretva na zaslon ispisuje i vrijeme trajanja vlastitog izvođenja u
-    seknudama. (Napomena: pri implementaciji je potrebno koristiti odgovarajući mehanizam za
-    vremensko usklađivanje višedretvenoga rada.)
-    '''
+    global all_divisors
+    all_divisors = [] # Resetiraj listu za svaki poziv funkcije
+    first_two_threads_done.clear() # Resetiraj Event
 
-    pass
+    while True:
+        try:
+            k = int(input("Unesite pozitivnu cjelobrojnu vrijednost k (1000 - 200000): "))
+            if 1000 <= k <= 200000:
+                break
+            else:
+                print("Vrijednost k mora biti između 1000 i 200000.")
+        except ValueError:
+            print("Pogrešan unos. Unesite cijeli broj.")
+
+    # Podjela intervala na dvije dretve
+    midpoint = k // 2
+    
+    # Kreiranje dretvi
+    thread1 = threading.Thread(target=findDivisors, args = (1, midpoint, "Thread-1"))
+    thread2 = threading.Thread(target=findDivisors, args = (midpoint + 1, k, "Thread-2"))
+    thread3 = threading.Thread(target=processEvenDivisors, args = ("Thread-3",))
+
+    # Pokretanje dretvi
+    thread1.start()
+    thread2.start()
+    thread3.start()
+
+    # Čekanje da prve dvije dretve završe
+    thread1.join()
+    thread2.join()
+    
+    # Signaliziraj trećoj dretvi da su prve dvije završile
+    first_two_threads_done.set()
+
+    # Čekanje da treća dretva završi
+    thread3.join()
+    print("\nSve dretve su završile izvođenje.")
 
 
 def menu():
