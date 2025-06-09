@@ -1,18 +1,89 @@
 from datetime import datetime
 import sys
 import platform
+import signal
+import os
+import traceback
+
+# Globalne varijable
+HOME_DIR = os.path.expanduser("~")
+LOG_FILE = os.path.join(HOME_DIR, "zapis.txt")
+
+class SignalController():
+    def sendSignal(signum):
+        """
+        Metoda koja šalje signal trenutnom procesu (python interpreteru)
+        
+        Args:
+            signum (int): Signal koji treba poslati.
+        """
+        
+        pid = os.getpid()
+        try:
+            os.kill(pid, signum)
+        except OSError as e:
+            print(f"Ne mogu poslati signal {signum}: {e}")
+    
+    def setSignals():
+        """
+        Metoda koja postavlja ponašanje procesa kada primi određeni signal
+        """
+        
+        # Signali koji rezultiraju terminacijom procesa (ignoriramo ih)
+        for s in [1,2,4,8,9,11,13,14,15,10,12]: 
+            try:
+                signal.signal(s, signal.SIG_IGN)
+            except (OSError, RuntimeError, ValueError):
+                # Neki signali se ne mogu ignorirati ili nisu podržani
+                print(f"Postavljanje signala {s} neuspješno")
+
+        # Za signale 3 i 6 postavi poseban handler
+        for s in [3, 6]:
+            try:
+                signal.signal(s, specialSignalHandler)
+            except (OSError, RuntimeError, ValueError):
+                # Neki signali se ne mogu ignorirati ili nisu podržani
+                print(f"Postavljanje signala {s} neuspješno")
+            
+
+
+
+def specialSignalHandler(signum, frame):
+    """
+    Funkcija koja se koristi kao callback kako bi definirali ponašanje procesa pri primanju signala 3 i 6.
+    Ispisuje broj zaprimljenog signala, PID i PPID procesa, te zapisuje stanje stoga u datoteku zapis.txt
+
+    Args:
+        signum (int): Broj zaprimljenog signala.
+        signum (frame obj): Okvir stoga u trenutku zaprimanja signala.
+    """
+    print(f"Zaprimljen signal broj {signum}")
+    print(f"PID: {os.getpid()}, PPID: {os.getppid()}")
+    with open(LOG_FILE, "a") as f:
+        f.write(f"PID: {os.getpid()}, PPID: {os.getppid()}\n")
+        f.write("Stack trace:\n")
+        traceback.print_stack(file=f)
+        f.write("\n")
+    print(f"Informacije su zapisane u {LOG_FILE}")
 
 
 def getMenuText():
-    print("1. Opis prve..")
-    print("2. Opis dsadadd..")
-    print("3. Opis prEeqewqewqqwqw..")
-    print("4. ....1321ewq..")
+    """
+    Funkcija za ispis izbornika
+    """
+    print("-"*50)
+    print("1. Prvi zadatak")
+    print("2. Pošalji signal trenutnom procesu")
+    print("3. Treći zadatak")
+    print("4. Četvrti zadatak")
     print("'exit'/'out' - Završetak izvođenja programa")
     print("-"*50)
 
 
 def getSystemInfo():
+    """
+    Funkcija koja ispisuje podatke o trenutnom vremenu, verziji python interpretera te operacijskog sustava
+    """
     currentTime = datetime.now()
     print(f"{currentTime.strftime('%H:%M:%S %A %d-%m-%Y')}")
     pythonVersion = sys.version_info
@@ -48,21 +119,25 @@ def zadatakPrvi():
     pass
 
 
-def zadatakDrugi():
+def sendSignalToCurrentProcess():
     '''
-    Omogućava korisniku unos broja signala koji će se poslati trenutnome
-    procesu (interpretoru naredbi). Trenutni proces ignorira sve signale čiji su brojevi u rasponu
-    od 1 do 20 a rezultiraju zaustavljanjem procesa u izvođenju (samostalnim istraživanjem pronaći
-    popis akcija kojima rezultiraju pojedini signali). Sve ostale signale program obrađuje kako je
-    zadano (engl. default), uz definiciju odgovarajućih upravljača. Ako je broj signala veći od 31,
-    javlja se poruka o pogrešnom unosu i upit za unos se ponavlja sve dok se ne unese korektna
-    vrijednost. Za zaprimljeni signal broj 3 ili 6, program na zaslon ispisuje poruku o zaprimljenom
-    signalu i njegovu rednu broju, zapisuje PPID i PID procesa, te trenutno stanje stoga u datoteku
-    zapis.txt koja se stvara u kućnom direktoriju korisnika, obavještava korisnika porukom o
-    tome što je napravio, pa nastavlja uobičajeno izvođenje (prikaz glavnoga izbornika).
+    ==========
+    2. Zadatak
+    ==========
+    Funkcija koja traži unos signala koji će se poslati trenutnom procesu , te ga šalje koristeći metodu sendSignal()
     '''
+    while True:
+        try:
+            broj_signala = int(input("Unesite broj signala (1-31): "))
+            if 1 <= broj_signala <= 31:
+                break
+            else:
+                print("Pogrešan unos, unesite broj između 1 i 31.")
+        except ValueError:
+            print("Pogrešan unos, unesite cijeli broj.")
+            
+    SignalController.sendSignal(broj_signala)
 
-    pass
 
 
 def zadatakTreci():
@@ -105,6 +180,7 @@ def zadatakCetvrti():
 
 
 def menu():
+    SignalController.setSignals() # Postavlja ponašanje procesa kada primi određene signale
     getSystemInfo()
     getMenuText()
     while True:
@@ -115,7 +191,7 @@ def menu():
             zadatakPrvi()
             getMenuText()
         elif (menuChoice == '2'):
-            zadatakDrugi()
+            sendSignalToCurrentProcess()
             getMenuText()
         elif (menuChoice == '3'):
             zadatakTreci()
@@ -130,10 +206,10 @@ def menu():
             pass
         else:
             print(f"Unos '{menuChoice}' nije prepoznat, pokušajte ponovo")
-        print("-"*50)
+        
 
 
 if __name__ == "__main__":
-    print("Ovo je seminarski rad tima ?. Dobrodošli!")
+    print("Ovo je seminarski rad tima 7. Dobrodošli!")
     menu()
     print("Dovidenja")
