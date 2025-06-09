@@ -169,7 +169,6 @@ def findDivisors(start, end, thread_name):
     """
     Funkcija za pronalaženje djelitelja brojeva unutar zadanog raspona.
     """
-    global all_divisors
     print(f"[{thread_name}] Početak izvođenja.")
     localDivisors = []
     for num in range(start, end + 1):
