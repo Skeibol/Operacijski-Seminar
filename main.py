@@ -58,7 +58,6 @@ def specialSignalHandler(signum, frame):
         frame (frame obj): Okvir stoga u trenutku zaprimanja signala.
     """
     print(f"Zaprimljen signal broj {signum}")
-    print(f"PID: {os.getpid()}, PPID: {os.getppid()}")
     with open(LOG_FILE, "a") as f:
         f.write(f"PID: {os.getpid()}, PPID: {os.getppid()}\n")
         f.write("Stack trace:\n")
