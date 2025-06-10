@@ -32,7 +32,7 @@ class SignalController():
         """
         
         # Signali koji rezultiraju terminacijom procesa (ignoriramo ih)
-        for s in [1,2,4,8,9,11,13,14,15,10,12]: 
+        for s in [1,2,3,9,15,17,19]: 
             try:
                 signal.signal(s, signal.SIG_IGN)
             except (OSError, RuntimeError, ValueError):
