@@ -16,28 +16,29 @@ HOME_DIR = os.path.expanduser("~")
 LOG_FILE = os.path.join(HOME_DIR, "zapis.txt")
 OPERATING_SYSTEM = ""
 
+
 class SignalController():
     def sendSignal(signum):
         """
         Metoda koja šalje signal trenutnom procesu (python interpreteru)
-        
+
         Args:
-            signum (int): Signal koji treba poslati.
+            signum (int) -- Signal koji treba poslati.
         """
-        
+
         pid = os.getpid()
         try:
             os.kill(pid, signum)
         except OSError as e:
             print(f"Ne mogu poslati signal {signum}: {e}")
-    
+
     def setSignals():
         """
         Metoda koja postavlja ponašanje procesa kada primi određeni signal
         """
-        
+
         # Signali koji rezultiraju terminacijom procesa (ignoriramo ih)
-        for s in [1,2,3,9,15,17,19]: 
+        for s in [1, 2, 3, 9, 15, 17, 19]:
             try:
                 signal.signal(s, signal.SIG_IGN)
             except (OSError, RuntimeError, ValueError):
@@ -51,8 +52,6 @@ class SignalController():
             except (OSError, RuntimeError, ValueError):
                 # Neki signali se ne mogu ignorirati ili nisu podržani
                 print(f"Postavljanje signala {s} neuspješno")
-            
-
 
 
 def specialSignalHandler(signum, frame):
@@ -61,8 +60,8 @@ def specialSignalHandler(signum, frame):
     Ispisuje broj zaprimljenog signala, PID i PPID procesa, te zapisuje stanje stoga u datoteku zapis.txt
 
     Args:
-        signum (int): Broj zaprimljenog signala.
-        frame (frame obj): Okvir stoga u trenutku zaprimanja signala.
+        signum (int) -- Broj zaprimljenog signala.
+        frame (frame obj) -- Okvir stoga u trenutku zaprimanja signala.
     """
     print(f"Zaprimljen signal broj {signum}")
     with open(LOG_FILE, "a") as f:
@@ -78,10 +77,10 @@ def getMenuText():
     Funkcija za ispis izbornika
     """
     print("-"*50)
-    print("1. Prvi zadatak")
+    print("1. Ispis informacija procesa")
     print("2. Pošalji signal trenutnom procesu")
-    print("3. Treći zadatak")
-    print("4. Četvrti zadatak")
+    print("3. Razlika korijena dretvama")
+    print("4. Ispis parnih brojeva pomoću dretvi ")
     print("'exit'/'out' - Završetak izvođenja programa")
     print("-"*50)
 
@@ -89,7 +88,7 @@ def getMenuText():
 def getSystemInfo():
     """
     Funkcija koja ispisuje podatke o trenutnom vremenu, verziji python interpretera te operacijskog sustava
-    
+
     Returns:
         str: Verzija operacijskog sustava radi kontrole toka programa (izbjegavanje greški sa raznim funkcijama)
     """
@@ -99,9 +98,8 @@ def getSystemInfo():
     print(f"Verzija pythona : {pythonVersion[0]}.{pythonVersion[1]}")
     operatingSystem = platform.platform()
     print(f"Verzija operacijskog sustava : {operatingSystem}")
-    
-    return operatingSystem[0] == "W"
 
+    return operatingSystem[0] != "W"
 
 
 def unos_broja(min_vrijednost=1, max_vrijednost=10):
@@ -109,8 +107,8 @@ def unos_broja(min_vrijednost=1, max_vrijednost=10):
     Traži od korisnika unos pozitivnog cijelog broja unutar zadanog intervala.
 
     Argumenti:
-    min_vrijednost (int): donja granica intervala (uključivo)
-    max_vrijednost (int): gornja granica intervala (uključivo)
+    min_vrijednost (int) -- donja granica intervala (uključivo)
+    max_vrijednost (int) -- gornja granica intervala (uključivo)
 
     Povratna vrijednost:
     int: uneseni broj koji zadovoljava uvjete
@@ -120,11 +118,13 @@ def unos_broja(min_vrijednost=1, max_vrijednost=10):
     """
     while True:
         try:
-            n = int(input(f"Unesi pozitivnu cjelobrojnu vrijednost u intervalu [{min_vrijednost},{max_vrijednost}]: "))
+            n = int(input(
+                f"Unesi pozitivnu cjelobrojnu vrijednost u intervalu [{min_vrijednost},{max_vrijednost}]: "))
             if min_vrijednost <= n <= max_vrijednost:
                 return n
             else:
-                print(f"Pogrešan unos. Broj mora biti u intervalu [{min_vrijednost},{max_vrijednost}].")
+                print(
+                    f"Pogrešan unos. Broj mora biti u intervalu [{min_vrijednost},{max_vrijednost}].")
         except ValueError:
             print("Pogrešan unos. Unesi cijeli broj.")
 
@@ -134,7 +134,7 @@ def dohvati_pid_djede(pid_roditelj):
     Dohvaća PID djeda procesa (roditelja roditelja) čitajući /proc/[pid_roditelj]/status.
 
     Argumenti:
-    pid_roditelj (int): PID roditeljskog procesa
+    pid_roditelj (int) -- PID roditeljskog procesa
 
     Povratna vrijednost:
     int ili None: PID djeda ako postoji, inače None
@@ -154,7 +154,7 @@ def dohvati_podatke_o_procesu(pid):
     Dohvaća korisničko ime vlasnika procesa i njegov prioritet.
 
     Argumenti:
-    pid (int): PID procesa
+    pid (int) -- PID procesa
 
     Povratna vrijednost:
     tuple: (pid, korisničko_ime, prioritet)
@@ -163,7 +163,8 @@ def dohvati_podatke_o_procesu(pid):
     try:
         uid = os.stat(f"/proc/{pid}").st_uid  # Dohvaća UID vlasnika procesa
         user = pwd.getpwuid(uid).pw_name  # Dohvaća korisničko ime prema UID-u
-        prio = os.getpriority(os.PRIO_PROCESS, pid)  # Dohvaća prioritet procesa
+        # Dohvaća prioritet procesa
+        prio = os.getpriority(os.PRIO_PROCESS, pid)
         return (pid, user, prio)
     except Exception:
         # Ako podaci nisu dostupni (proces je završio ili nema dozvolu), ignoriramo
@@ -181,11 +182,19 @@ def forkChildProcesses():
     """
     n = unos_broja()
 
-    pid = os.fork()
+    try:
+        pid = os.fork()
+    except OSError as e:
+        print(f"Greška prilikom forkanja procesa: {e}")
+        return
 
     if pid == 0:
         # Dječji proces
-        os.chdir(HOME_DIR)  # Promijeni radni direktorij na home direktorij korisnika
+        try:
+            os.chdir(HOME_DIR)
+        except Exception as e:
+            print(f"[Dijete] Ne mogu promijeniti direktorij: {e}")
+            os._exit(1)
 
         pid_djete = os.getpid()
         pid_roditelj = os.getppid()
@@ -205,13 +214,16 @@ def forkChildProcesses():
             print(f"{pid_info}\t{korisnik}\t{prioritet}")
 
         time.sleep(n)  # Pauza n sekundi, bez zauzeća CPU-a
-
-        os._exit(0)  # Završetak dječjeg procesa bez pokretanja čišćenja interpreterom
+        os._exit(0)
 
     else:
         # Roditeljski proces čeka da dijete završi
-        os.waitpid(pid, 0)
-        print("Podproces završen. Povratak u glavni izbornik.")
+        try:
+            _, status = os.waitpid(pid, 0)
+            print("Podproces završen. Povratak u glavni izbornik.")
+        except ChildProcessError:
+            print(f"Greška: Dijete proces PID={pid} ne postoji ili je već završio.")
+
 
 
 def sendSignalToCurrentProcess():
@@ -230,9 +242,8 @@ def sendSignalToCurrentProcess():
                 print("Pogrešan unos, unesite broj između 1 i 31.")
         except ValueError:
             print("Pogrešan unos, unesite cijeli broj.")
-            
-    SignalController.sendSignal(broj_signala)
 
+    SignalController.sendSignal(broj_signala)
 
 
 def interval(m):
@@ -259,6 +270,7 @@ def interval(m):
     kraj3 = m
     return (start1, kraj1), (start2, kraj2), (start3, kraj3)
 
+
 def razlika_korijena(start, kraj, putanja, trenutni_semafor, sljedeci_semafor):
     """
     Izračunava razliku kvadratnih korijena svih cijelih brojeva u danom 
@@ -274,9 +286,9 @@ def razlika_korijena(start, kraj, putanja, trenutni_semafor, sljedeci_semafor):
                         u svom trenutnom koraku
     sljedeci_semafor -- semafor koji se otključava kako bi sljedeća dretva 
                         mogla nastaviti s radom
-    
+
     Vraća:
-    
+
     Funkcija ne vraća vrijednost (None).
     """
 
@@ -289,12 +301,13 @@ def razlika_korijena(start, kraj, putanja, trenutni_semafor, sljedeci_semafor):
             rezultat += korijen
         else:
             rezultat -= korijen
-        rezultati_lista.append(f"{i}: {rezultat:.4f}\n")
+            rezultati_lista.append(f"{i}: {rezultat:.4f}\n")
 
     trenutni_semafor.acquire()
     with open(putanja, "a") as f:
         f.writelines(rezultati_lista)
     sljedeci_semafor.release()
+
 
 def threadingRootDifference():
     """
@@ -309,10 +322,10 @@ def threadingRootDifference():
 
     Funkcija ne vraća vrijednost (None).
     """
-    semafor1=threading.Semaphore(1)
-    semafor2=threading.Semaphore(0)
-    semafor3=threading.Semaphore(0)
-    
+    semafor1 = threading.Semaphore(1)
+    semafor2 = threading.Semaphore(0)
+    semafor3 = threading.Semaphore(0)
+
     while True:
         try:
             m = int(input("Unesi pozitivni cijeli broj veći od 6 milijuna: "))
@@ -324,13 +337,17 @@ def threadingRootDifference():
             print("Pogrešan unos. Unos mora biti cijeli broj.")
 
     (s1, k1), (s2, k2), (s3, k3) = interval(m)
-    kucni_dir_putanja = os.path.join(os.path.expanduser("~"), "meduvrijednosti.txt")
+    kucni_dir_putanja = os.path.join(
+        os.path.expanduser("~"), "meduvrijednosti.txt")
 
     open(kucni_dir_putanja, "w").close()  # očisti datoteku
 
-    t1 = threading.Thread(target=razlika_korijena, args=(s1, k1, kucni_dir_putanja,semafor1,semafor2))
-    t2 = threading.Thread(target=razlika_korijena, args=(s2, k2, kucni_dir_putanja,semafor2,semafor3))
-    t3 = threading.Thread(target=razlika_korijena, args=(s3, k3, kucni_dir_putanja,semafor3,threading.Semaphore(0)))
+    t1 = threading.Thread(target=razlika_korijena, args=(
+        s1, k1, kucni_dir_putanja, semafor1, semafor2))
+    t2 = threading.Thread(target=razlika_korijena, args=(
+        s2, k2, kucni_dir_putanja, semafor2, semafor3))
+    t3 = threading.Thread(target=razlika_korijena, args=(
+        s3, k3, kucni_dir_putanja, semafor3, threading.Semaphore(0)))
 
     t1.start()
     t2.start()
@@ -341,22 +358,29 @@ def threadingRootDifference():
     t3.join()
 
     print("\nRezultati su zapisani u datoteku.\n")
-    
+
+
 all_divisors = []
 divisors_lock = threading.Lock()
 first_two_threads_done = threading.Event()
 
+
 def findDivisors(start, end, thread_name):
     """
     Funkcija za pronalaženje djelitelja brojeva unutar zadanog raspona.
-    """
+
+    Args:
+        start (int) -- Početni broj od kojeg tražimo djelitelje
+        end (int) -- Završni broj od kojeg tražimo djelitelje
+        thread_name (str) -- Ime dretve koja izvršava izračun
+        """
     print(f"[{thread_name}] Početak izvođenja.")
     localDivisors = []
     for num in range(start, end + 1):
         for i in range(1, num + 1):
             if num % i == 0:
                 localDivisors.append(i)
-    
+
     with divisors_lock:
         all_divisors.extend(localDivisors)
     print(f"[{thread_name}] Kraj izvođenja.")
@@ -366,39 +390,56 @@ def processEvenDivisors(thread_name):
     """
     Funkcija koja pronalazi sve parne djelitelje iz globalne liste, uklanja duplikate,
     sortira ih i ispisuje.
+
+    Args:
+        thread_name (str) -- Ime dretve koja izvršava izračun
     """
     print(f"[{thread_name}] Početak izvođenja.")
     startTime = time.time()
-    
+
     # Čeka dok prve dvije dretve ne završe s radom
     first_two_threads_done.wait()
 
-    uniqueEvenDivisors = set() # Koristimo set za automatsko uklanjanje duplikata
+    uniqueEvenDivisors = set()  # Koristimo set za automatsko uklanjanje duplikata
 
-    with divisors_lock: # Zaključava listu prije čitanja
+    with divisors_lock:  # Zaključava listu prije čitanja
         # Pronađi sve parne djelitelje i dodaj ih u set (set automatski rješava duplikate)
         for divisor in all_divisors:
             if divisor % 2 == 0:
                 uniqueEvenDivisors.add(divisor)
-        
+
     # Pretvori set natrag u listu i sortiraj je
     sorted_uniqueEvenDivisors = sorted(list(uniqueEvenDivisors))
 
     print("\nSvi parni djelitelji (sortirani i bez ponavljanja):")
     print(sorted_uniqueEvenDivisors)
-    
+
     endTime = time.time()
     executionTime = endTime - startTime
     print(f"[{thread_name}] Kraj izvođenja.")
     print(f"[{thread_name}] Vrijeme trajanja izvođenja: {executionTime:.2f} sekundi.")
 
+
 def threadingDivision():
-    all_divisors = [] # Resetiraj listu za svaki poziv funkcije
-    first_two_threads_done.clear() # Resetiraj Event
+    """
+    Glavna funkcija koja omogućuje korisniku unos cijelog broja unutar određenog raspona,
+     a zatim pronalazi sve njegove djelitelje koristeći tri dretve. Prve dvije dretve
+     pretražuju djelitelje u 2 intervala, a treća dretva obrađuje parne djelitelje nakon
+     završetka prve dvije.
+
+    Argumenti: 
+    funkcija nema argumenata
+
+    Vraća: 
+    Funkcija ne vraća ništa
+    """
+    all_divisors = []  # Resetiraj listu za svaki poziv funkcije
+    first_two_threads_done.clear()  # Resetiraj Event
 
     while True:
         try:
-            k = int(input("Unesite pozitivnu cjelobrojnu vrijednost k (1000 - 200000): "))
+            k = int(
+                input("Unesite pozitivnu cjelobrojnu vrijednost k (1000 - 200000): "))
             if 1000 <= k <= 200000:
                 break
             else:
@@ -408,11 +449,13 @@ def threadingDivision():
 
     # Podjela intervala na dvije dretve
     midpoint = k // 2
-    
+
     # Kreiranje dretvi
-    thread1 = threading.Thread(target=findDivisors, args = (1, midpoint, "Thread-1"))
-    thread2 = threading.Thread(target=findDivisors, args = (midpoint + 1, k, "Thread-2"))
-    thread3 = threading.Thread(target=processEvenDivisors, args = ("Thread-3",))
+    thread1 = threading.Thread(
+        target=findDivisors, args=(1, midpoint, "Thread-1"))
+    thread2 = threading.Thread(
+        target=findDivisors, args=(midpoint + 1, k, "Thread-2"))
+    thread3 = threading.Thread(target=processEvenDivisors, args=("Thread-3",))
 
     # Pokretanje dretvi
     thread1.start()
@@ -422,7 +465,7 @@ def threadingDivision():
     # Čekanje da prve dvije dretve završe
     thread1.join()
     thread2.join()
-    
+
     # Signaliziraj trećoj dretvi da su prve dvije završile
     first_two_threads_done.set()
 
@@ -432,19 +475,19 @@ def threadingDivision():
 
 
 def menu():
-    SignalController.setSignals() # Postavlja ponašanje procesa kada primi određene signale
-  
-    
-    if(getSystemInfo()): # Ako se program pokreće na platformi windows, zaustavimo izvođenje u ovom trenutku (Windows ne podržava većinu metodi koje se koriste)
+    # Postavlja ponašanje procesa kada primi određene signale
+    SignalController.setSignals()
+
+    if (not getSystemInfo()):  # Ako se program pokreće na platformi windows, zaustavimo izvođenje u ovom trenutku (Windows ne podržava većinu metodi koje se koriste)
         print("Neke funkcionalnosti nisu dostupne na platformi Windows.")
         return
     else:
         getMenuText()
-    
+
     while True:
 
         menuChoice = input("Koju obradu želite pokrenuti: ")
-        
+
         if (menuChoice == '1'):
             forkChildProcesses()
             getMenuText()
@@ -464,7 +507,6 @@ def menu():
             pass
         else:
             print(f"Unos '{menuChoice}' nije prepoznat, pokušajte ponovo")
-        
 
 
 if __name__ == "__main__":
